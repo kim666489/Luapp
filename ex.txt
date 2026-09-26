@@ -108,3 +108,21 @@ int main(int argc,char* args[]) {
     return 0;
 }
 ```
+
+```
+void read_byte_file(string path) {
+    ifstream file(path,ios::binary);
+    file.seekg(0,ios::end);
+    int size = file.tellg();
+    file.seekg(0,ios::beg);
+    vector<char> buffer(size);
+    file.read(reinterpret_cast<char*>(buffer.data()),size);
+    file.close();
+}
+
+void write_byte_file(vector<uint8_t> data,string path) {
+    ofstream file(path);
+    file.write(reinterpret_cast<char*>(data.data()),data.size());
+    file.close();
+};
+```

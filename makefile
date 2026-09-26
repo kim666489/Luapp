@@ -10,8 +10,11 @@ run:
 build_pip:
 	javac -d ./luapip/bin ./luapip/src/*.java 
 run_pip:
-	java -cp ./luapip/bin LuaPip
+	java -cp ./luapip/bin LuaPip $(args)
 
 lua_install:
 	sudo apt update
 	sudo apt install luajit libluajit-5.1-dev
+
+clean:
+	rm -rf ./temp/*

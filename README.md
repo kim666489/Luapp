@@ -1,9 +1,9 @@
 # Lua++
 
 Lua++ เป็น runtime สำหรับรันสคริปต์ Lua โดยใช้ LuaJIT และเปิดทางให้สคริปต์เรียกฟังก์ชันที่เขียนด้วย C++ ผ่าน dynamic module (`.so`) ได้
-โปรเจกต์นี้ประกอบด้วยตัว runtime หลักที่เขียนด้วย C++, ตัวอย่างการเชื่อมต่อ C++/Lua และโครงร่างเครื่องมือ `LuaPip` ที่ยังอยู่ระหว่างพัฒนา
+โปรเจกต์นี้ประกอบด้วยตัว runtime หลักที่เขียนด้วย C++, ตัวอย่างการเชื่อมต่อ C++/Lua และเครื่องมือ `LuaPip` สำหรับจัดการแพ็กเกจ
 
-> สถานะปัจจุบัน: ฟังก์ชันหลักสำหรับรัน Lua และโหลด C++ module ใช้งานได้ ส่วน `LuaPip` ยังไม่มี logic สำหรับใช้งานจริง
+> สถานะปัจจุบัน: runtime รองรับการรัน Lua และโหลด C++ module ส่วน `LuaPip` รองรับติดตั้ง แสดงรายการ และถอนการติดตั้งแพ็กเกจในระดับโปรเจกต์หรือแบบถาวร
 
 ## ความสามารถหลัก
 
@@ -26,6 +26,7 @@ Lua++ เป็น runtime สำหรับรันสคริปต์ Lua 
 ├── luapip/
 │   ├── src/                      # โค้ด Java ของ LuaPip
 │   └── bin/                      # Java class ที่ compile แล้ว
+├── packages/                     # แพ็กเกจที่ติดตั้งเฉพาะโปรเจกต์
 ├── src/
 │   ├── lpp.cpp                   # entry point และ command-line parsing
 │   └── include/
@@ -53,6 +54,42 @@ make lua_install
 ```
 
 หาก distribution ของคุณใช้ชื่อแพ็กเกจ Boost ต่างจากระบบ Debian/Ubuntu ให้ติดตั้ง development package ของ `boost_system` และ `boost_filesystem` เพิ่มเอง
+
+### ติดตั้งโปรเจกต์จาก GitHub
+
+บน Linux Debian/Ubuntu สามารถ clone repository และรัน setup เพื่อเตรียมเครื่องได้:
+
+```bash
+git clone https://github.com/kim666489/Lua-.git
+cd Lua-
+chmod +x setup.sh
+./setup.sh
+```
+
+สคริปต์ใช้ `apt-get` ติดตั้ง compiler/build tools, LuaJIT, Boost.System, Boost.Filesystem, Java, Git และเครื่องมือ ZIP โดยใช้ `sudo` เมื่อจำเป็น จากนั้นสร้าง `bin/`, `luapip/bin/`, `packages/` และ `temp/` ก่อน build runtime กับ LuaPip
+
+setup เพิ่ม alias `lpp` และ `lpip` ให้ทั้ง Bash และ Zsh หาก shell ปัจจุบันเป็น Bash ให้โหลด alias โดยไม่ต้องเปิด terminal ใหม่:
+
+```bash
+source ~/.bashrc
+```
+
+ตัวอย่างการใช้ alias:
+
+```bash
+lpp ./program.lua
+lpip install ./hello-package.zip
+lpip list
+```
+
+ตัวเลือก setup:
+
+- `./setup.sh --skip-deps`: ไม่ติดตั้ง system packages (ใช้เมื่อมี dependency ครบแล้ว)
+- `./setup.sh --no-aliases`: ไม่แก้ไฟล์ startup ของ Bash/Zsh
+- `./setup.sh --no-build`: สร้างโฟลเดอร์และ alias แต่ไม่ build
+- `./setup.sh --help`: แสดงตัวเลือกทั้งหมด
+
+setup ปัจจุบันรองรับ Linux ที่ใช้ `apt-get` เช่น Debian และ Ubuntu เท่านั้น
 
 ## การ build runtime
 
@@ -284,6 +321,129 @@ make -f makefile build
 make -f makefile run
 ```
 
+## LuaPip: จัดการแพ็กเกจ
+
+Build เครื่องมือด้วย Java 16 ขึ้นไป:
+
+```bash
+make build_pip
+```
+
+แพ็กเกจเป็นโฟลเดอร์หรือ ZIP ที่มี `init.json` อยู่ที่ราก ตัวอย่างโครงสร้าง:
+
+```text
+hello-package/
+├── init.json
+├── README.md
+└── src/
+	└── hello.lua
+```
+
+ตัวอย่าง `init.json`:
+
+```json
+{
+	"name": "hello-package",
+	"version": "1.0.0",
+	"mainFolder": "./src"
+}
+```
+
+`name` จำเป็นและใช้ได้เฉพาะตัวอักษรอังกฤษ ตัวเลข จุด ขีดกลาง และขีดล่าง โดยต้องเริ่มด้วยตัวอักษรหรือตัวเลข ส่วน `version` และ `mainFolder` เป็นข้อมูลเสริมที่เก็บไว้ใน manifest
+
+รันคำสั่งจากโฟลเดอร์โปรเจกต์ที่ต้องการติดตั้ง:
+
+```bash
+make run_pip args="install ./hello-package.zip"
+make run_pip args="list"
+make run_pip args="remove hello-package"
+```
+
+โหมดติดตั้งมีสองแบบ:
+
+| Mode | ตำแหน่งติดตั้ง | ใช้เมื่อ |
+| --- | --- | --- |
+| `project` (ค่าเริ่มต้น) | `./packages/<name>` ใน current working directory | ต้องการให้ dependency อยู่กับโปรเจกต์ |
+| `permanent` | `~/.luapip/packages/<name>` | ต้องการติดตั้งไว้ใช้ข้ามโปรเจกต์ |
+
+ระบุ mode ได้ด้วย `--mode project`, `--mode=project`, `--mode permanent` หรือ `--mode=permanent` ตัวอย่าง:
+
+```bash
+make run_pip args="install ./hello-package.zip --mode permanent"
+make run_pip args="list --mode permanent"
+make run_pip args="uninstall hello-package --mode permanent"
+```
+
+คำสั่ง `add` ใช้แทน `install` ได้ และ `uninstall` ใช้แทน `remove` ได้ คำสั่งติดตั้งไม่เขียนทับแพ็กเกจชื่อเดียวกันที่ติดตั้งอยู่แล้ว ให้ถอนของเดิมก่อนติดตั้งเวอร์ชันใหม่ ไฟล์ ZIP ต้องมี `init.json` ที่ราก หรืออยู่ในโฟลเดอร์ระดับบนสุดเพียงโฟลเดอร์เดียว
+
+LuaPip จัดเก็บไฟล์แพ็กเกจตามโหมดที่เลือก แต่ runtime Lua++ ปัจจุบันยังไม่ค้นหาโฟลเดอร์ `packages/` โดยอัตโนมัติ การนำ module จากแพ็กเกจมาใช้ยังต้องระบุ module ใน `structfile.json` ตามขั้นตอนด้านบน
+
+### ตัวอย่างตั้งแต่สร้างแพ็กเกจจนติดตั้ง
+
+สร้างโฟลเดอร์แพ็กเกจและ `init.json` โดยให้ `name` ตรงกับชื่อที่ต้องการใช้ติดตั้ง:
+
+```text
+hello-package/
+├── init.json
+└── src/
+		└── hello.lua
+```
+
+```json
+{
+	"name": "hello-package",
+	"version": "1.0.0",
+	"mainFolder": "./src"
+}
+```
+
+ติดตั้งได้โดยส่ง path ของโฟลเดอร์โดยตรง:
+
+```bash
+make run_pip args="install ./hello-package"
+```
+
+หรือสร้าง ZIP โดยให้ `init.json` อยู่ที่รากของ archive แล้วติดตั้ง ZIP:
+
+```bash
+cd hello-package
+zip -r ../hello-package.zip init.json src
+cd ..
+make run_pip args="install ./hello-package.zip"
+```
+
+ตรวจสอบรายการแพ็กเกจและถอนการติดตั้ง:
+
+```bash
+make run_pip args="list"
+make run_pip args="remove hello-package"
+```
+
+ถ้าต้องการติดตั้งแบบถาวร ให้ระบุ `--mode permanent` ในคำสั่ง install, list และ remove ทุกครั้ง เช่น:
+
+```bash
+make run_pip args="install ./hello-package.zip --mode permanent"
+make run_pip args="list --mode permanent"
+make run_pip args="remove hello-package --mode permanent"
+```
+
+เรียก Java โดยตรงได้หลังจาก build แล้ว:
+
+```bash
+java -cp ./luapip/bin LuaPip help
+java -cp ./luapip/bin LuaPip install ./hello-package.zip --mode project
+```
+
+### ปัญหาที่พบบ่อยของ LuaPip
+
+- `ไม่พบ init.json`: ตรวจให้แน่ใจว่าไฟล์ชื่อ `init.json` อยู่ที่รากของโฟลเดอร์แพ็กเกจหรือ ZIP หาก ZIP มีโฟลเดอร์ครอบ ต้องมีโฟลเดอร์ระดับบนสุดที่บรรจุ `init.json` เพียงโฟลเดอร์เดียว
+- `init.json ต้องมี name ที่ใช้ได้`: กำหนด `name` เป็น string ที่ขึ้นต้นด้วยตัวอักษรอังกฤษหรือตัวเลข และตามด้วยตัวอักษรอังกฤษ ตัวเลข `.`, `_` หรือ `-`
+- ติดตั้งชื่อเดิมซ้ำไม่ได้: LuaPip ไม่เขียนทับแพ็กเกจเดิม ให้ใช้ `remove <name>` ใน mode เดียวกันก่อน แล้วจึงติดตั้งใหม่
+- ไม่พบแพ็กเกจตอน list หรือ remove: ตรวจว่าใช้ mode เดียวกับตอนติดตั้ง และรันจาก current working directory เดิมเมื่อใช้ mode `project`
+- ติดตั้งแล้ว Lua ยังไม่พบ module: เพิ่ม module ใน `structfile.json` เอง เพราะ runtime ยังไม่ค้นหาโฟลเดอร์แพ็กเกจโดยอัตโนมัติ
+
+LuaPip เวอร์ชันนี้ติดตั้งจาก path ในเครื่องเท่านั้น ยังไม่มี remote registry, การดาวน์โหลดจาก URL, การแก้ dependency อัตโนมัติ หรือการอัปเดตทับแพ็กเกจที่ติดตั้งอยู่
+
 ## Troubleshooting
 
 ### `Config file not found`
@@ -320,16 +480,6 @@ ls -l module.so
 
 ตรวจสอบว่าใช้ชื่อเรียกตรงกับ `name` และเลือก namespace ให้ถูกกับ `mode` เช่น `mode: "sub"` ต้องเรียกผ่าน `cpp.<name>` ส่วน `mode: "global"` ต้องเรียกผ่าน `<name>` โดยตรง
 
-## LuaPip
-
-คำสั่งสำหรับ compile และรันส่วน Java ที่มีอยู่ใน makefile คือ:
-
-```bash
-make build_pip
-make run_pip
-```
-
-ปัจจุบัน `luapip/src/LuaPip.java` ยังไม่มีการทำงานหลัก จึงไม่ควรถือว่า LuaPip เป็น package manager ที่พร้อมใช้งาน ส่วน `json.java` เป็น JSON parser/serializer แบบไฟล์เดียวที่ไม่พึ่ง dependency ภายนอก
 
 ## ข้อจำกัดที่ทราบในปัจจุบัน
 
@@ -337,7 +487,7 @@ make run_pip
 - การจัดการ error ของ Lua แสดงข้อความแล้วดำเนินการต่อในบางกรณี ไม่ได้หยุด process ทุกกรณี
 - module API ยังเป็น low-level Lua C API ผู้พัฒนาต้องจัดการ Lua stack และชนิดข้อมูลเอง
 - `structfile.json` ใช้ current working directory เป็นฐาน จึงควรระวังเมื่อเรียก executable จาก directory อื่น
-- `setup.sh` ยังว่างอยู่ การติดตั้ง dependency จึงต้องใช้คำสั่งในหัวข้อการติดตั้งหรือจัดการเองตามระบบปฏิบัติการ
+- `setup.sh` รองรับ Linux Debian/Ubuntu ที่ใช้ `apt-get`; ระบบปฏิบัติการอื่นต้องติดตั้ง dependency ด้วยตนเอง
 
 ## แหล่งอ้างอิงภายในโปรเจกต์
 
