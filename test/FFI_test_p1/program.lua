@@ -1,0 +1,1 @@
+print(cpp.math.add(2,2))

@@ -1,0 +1,9 @@
+{
+    "modules": [
+        {
+            "name":"math",
+            "path":"./module.so",
+            "mode":"sub"
+        }
+    ]
+}
