@@ -323,126 +323,90 @@ make -f makefile run
 
 ## LuaPip: จัดการแพ็กเกจ
 
-Build เครื่องมือด้วย Java 16 ขึ้นไป:
+Build เครื่องมือด้วย Java และ `javac`:
 
 ```bash
 make build_pip
 ```
 
-แพ็กเกจเป็นโฟลเดอร์หรือ ZIP ที่มี `init.json` อยู่ที่ราก ตัวอย่างโครงสร้าง:
-
-```text
-hello-package/
-├── init.json
-├── README.md
-└── src/
-	└── hello.lua
-```
-
-ตัวอย่าง `init.json`:
+แพ็กเกจเป็นโฟลเดอร์หรือ ZIP ที่มี `init.json` อยู่ที่ราก โดย `name` และ `version` เป็นข้อมูลแพ็กเกจ หากใช้ `buildMode: "source"` ต้องระบุ `build.command` และ `build.output` ด้วย ตัวอย่างแพ็กเกจ C++:
 
 ```json
 {
-	"name": "hello-package",
+	"name": "io",
 	"version": "1.0.0",
-	"mainFolder": "./src"
+	"buildMode": "source",
+	"build": {
+		"command": "g++ -fPIC -shared -o io.so src/main.cpp -lluajit-5.1",
+		"output": "io.so"
+	},
+	"modules": [
+		{ "name": "io", "path": "io.so", "mode": "sub" }
+	]
 }
 ```
 
-`name` จำเป็นและใช้ได้เฉพาะตัวอักษรอังกฤษ ตัวเลข จุด ขีดกลาง และขีดล่าง โดยต้องเริ่มด้วยตัวอักษรหรือตัวเลข ส่วน `version` และ `mainFolder` เป็นข้อมูลเสริมที่เก็บไว้ใน manifest
-
-รันคำสั่งจากโฟลเดอร์โปรเจกต์ที่ต้องการติดตั้ง:
-
-```bash
-make run_pip args="install ./hello-package.zip"
-make run_pip args="list"
-make run_pip args="remove hello-package"
-```
-
-โหมดติดตั้งมีสองแบบ:
-
-| Mode | ตำแหน่งติดตั้ง | ใช้เมื่อ |
-| --- | --- | --- |
-| `project` (ค่าเริ่มต้น) | `./packages/<name>` ใน current working directory | ต้องการให้ dependency อยู่กับโปรเจกต์ |
-| `permanent` | `~/.luapip/packages/<name>` | ต้องการติดตั้งไว้ใช้ข้ามโปรเจกต์ |
-
-ระบุ mode ได้ด้วย `--mode project`, `--mode=project`, `--mode permanent` หรือ `--mode=permanent` ตัวอย่าง:
-
-```bash
-make run_pip args="install ./hello-package.zip --mode permanent"
-make run_pip args="list --mode permanent"
-make run_pip args="uninstall hello-package --mode permanent"
-```
-
-คำสั่ง `add` ใช้แทน `install` ได้ และ `uninstall` ใช้แทน `remove` ได้ คำสั่งติดตั้งไม่เขียนทับแพ็กเกจชื่อเดียวกันที่ติดตั้งอยู่แล้ว ให้ถอนของเดิมก่อนติดตั้งเวอร์ชันใหม่ ไฟล์ ZIP ต้องมี `init.json` ที่ราก หรืออยู่ในโฟลเดอร์ระดับบนสุดเพียงโฟลเดอร์เดียว
-
-LuaPip จัดเก็บไฟล์แพ็กเกจตามโหมดที่เลือก แต่ runtime Lua++ ปัจจุบันยังไม่ค้นหาโฟลเดอร์ `packages/` โดยอัตโนมัติ การนำ module จากแพ็กเกจมาใช้ยังต้องระบุ module ใน `structfile.json` ตามขั้นตอนด้านบน
-
-### ตัวอย่างตั้งแต่สร้างแพ็กเกจจนติดตั้ง
-
-สร้างโฟลเดอร์แพ็กเกจและ `init.json` โดยให้ `name` ตรงกับชื่อที่ต้องการใช้ติดตั้ง:
-
-```text
-hello-package/
-├── init.json
-└── src/
-		└── hello.lua
-```
-
-```json
-{
-	"name": "hello-package",
-	"version": "1.0.0",
-	"mainFolder": "./src"
-}
-```
-
-ติดตั้งได้โดยส่ง path ของโฟลเดอร์โดยตรง:
+ติดตั้งจากโฟลเดอร์โปรเจกต์ปัจจุบันด้วยคำสั่งจริงของ LuaPip:
 
 ```bash
 make run_pip args="install ./hello-package"
-```
-
-หรือสร้าง ZIP โดยให้ `init.json` อยู่ที่รากของ archive แล้วติดตั้ง ZIP:
-
-```bash
-cd hello-package
-zip -r ../hello-package.zip init.json src
-cd ..
-make run_pip args="install ./hello-package.zip"
-```
-
-ตรวจสอบรายการแพ็กเกจและถอนการติดตั้ง:
-
-```bash
 make run_pip args="list"
 make run_pip args="remove hello-package"
 ```
 
-ถ้าต้องการติดตั้งแบบถาวร ให้ระบุ `--mode permanent` ในคำสั่ง install, list และ remove ทุกครั้ง เช่น:
+แพ็กเกจติดตั้งแบบ local ที่ `./packages/<name>` โดยค่าเริ่มต้น หากต้องการใช้ scope ของโปรเจกต์หลักแบบ global ให้เพิ่ม `-g` หรือ `--global`:
 
 ```bash
-make run_pip args="install ./hello-package.zip --mode permanent"
-make run_pip args="list --mode permanent"
-make run_pip args="remove hello-package --mode permanent"
+make run_pip args="install ./hello-package.zip -g"
+make run_pip args="list -g"
+make run_pip args="remove hello-package -g"
 ```
 
-เรียก Java โดยตรงได้หลังจาก build แล้ว:
+การติดตั้งชื่อเดิมซ้ำจะล้มเหลว ใช้ `-f` หรือ `--force` เมื่อต้องการติดตั้งทับ:
 
 ```bash
-java -cp ./luapip/bin LuaPip help
-java -cp ./luapip/bin LuaPip install ./hello-package.zip --mode project
+make run_pip args="install ./hello-package -f"
 ```
+
+คำสั่งที่รองรับคือ `install`, `remove`, `list`, `load` และ `help` ไฟล์ ZIP ต้องมี `init.json` ที่รากของ archive ส่วน `load` ใช้ตรวจสอบและ stage แพ็กเกจโดยไม่ติดตั้ง:
+
+```bash
+make run_pip args="load ./hello-package.zip"
+make run_pip args="help"
+```
+
+เมื่อติดตั้งแพ็กเกจที่มี `modules` LuaPip จะคัดลอก artifact ไปยัง `packages/<name>`, บันทึก registry ที่ `packages/installed.json` และลงทะเบียน module ใน `structfile.json` สำหรับ local หรือ `config/installed-packages.json` สำหรับ global จากนั้น runtime จึงโหลด module ได้ตาม `mode` ที่ระบุ โดย runtime ยังไม่ค้นหาแพ็กเกจเองหากไม่มี registration นี้
+
+### ทดสอบ Pip_test_p1
+
+ตัวอย่างนี้ build shared library จาก `src/main.cpp`, ติดตั้งแพ็กเกจ `io`, แล้วเรียก `cpp.io.add`:
+
+```bash
+make build
+make build_pip
+cd test/Pip_test_p1
+java -cp ../../luapip/bin LuaPip install . -f
+java -cp ../../luapip/bin LuaPip list
+../../bin/lpp.out ./program.lua
+```
+
+ผลลัพธ์สำคัญที่คาดหวังคือรายการ `io v1.0.0 [1 module(s)]` และบรรทัดสุดท้าย:
+
+```text
+3
+```
+
+ต้องรัน runtime ด้วย `./program.lua` จาก `test/Pip_test_p1` เพื่อให้ runtime ใช้ `structfile.json` ที่ LuaPip สร้างในโฟลเดอร์ทดสอบ
 
 ### ปัญหาที่พบบ่อยของ LuaPip
 
-- `ไม่พบ init.json`: ตรวจให้แน่ใจว่าไฟล์ชื่อ `init.json` อยู่ที่รากของโฟลเดอร์แพ็กเกจหรือ ZIP หาก ZIP มีโฟลเดอร์ครอบ ต้องมีโฟลเดอร์ระดับบนสุดที่บรรจุ `init.json` เพียงโฟลเดอร์เดียว
-- `init.json ต้องมี name ที่ใช้ได้`: กำหนด `name` เป็น string ที่ขึ้นต้นด้วยตัวอักษรอังกฤษหรือตัวเลข และตามด้วยตัวอักษรอังกฤษ ตัวเลข `.`, `_` หรือ `-`
-- ติดตั้งชื่อเดิมซ้ำไม่ได้: LuaPip ไม่เขียนทับแพ็กเกจเดิม ให้ใช้ `remove <name>` ใน mode เดียวกันก่อน แล้วจึงติดตั้งใหม่
-- ไม่พบแพ็กเกจตอน list หรือ remove: ตรวจว่าใช้ mode เดียวกับตอนติดตั้ง และรันจาก current working directory เดิมเมื่อใช้ mode `project`
-- ติดตั้งแล้ว Lua ยังไม่พบ module: เพิ่ม module ใน `structfile.json` เอง เพราะ runtime ยังไม่ค้นหาโฟลเดอร์แพ็กเกจโดยอัตโนมัติ
+- `init.json not found`: ตรวจให้แน่ใจว่า `init.json` อยู่ที่รากของโฟลเดอร์แพ็กเกจหรือ ZIP
+- `buildMode "source" requires build.command`: เพิ่ม `build.command` และ `build.output` ใน `init.json`
+- ติดตั้งชื่อเดิมซ้ำไม่ได้: ใช้ `remove <name>` ก่อน หรือใช้ `install <path> -f`
+- ไม่พบแพ็กเกจตอน `list` หรือ `remove`: ตรวจ scope ให้ตรงกัน โดยใช้ `-g` เฉพาะแพ็กเกจ global
+- ติดตั้งแล้ว Lua ยังไม่พบ module: ตรวจ `structfile.json` หรือ `config/installed-packages.json` และตรวจว่า path ของ artifact มีอยู่จริง
 
-LuaPip เวอร์ชันนี้ติดตั้งจาก path ในเครื่องเท่านั้น ยังไม่มี remote registry, การดาวน์โหลดจาก URL, การแก้ dependency อัตโนมัติ หรือการอัปเดตทับแพ็กเกจที่ติดตั้งอยู่
+LuaPip เวอร์ชันนี้ติดตั้งจาก path ในเครื่องเท่านั้น ยังไม่มี remote registry, การดาวน์โหลดจาก URL หรือการแก้ dependency อัตโนมัติ
 
 ## Troubleshooting
 

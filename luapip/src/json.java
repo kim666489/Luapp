@@ -400,46 +400,4 @@ public final class json {
             sb.append('"');
         }
     }
-
-    // ==================== ตัวอย่างการรัน (main) ====================
-
-    public static void main(String[] args) {
-        // 1) Parse จาก string
-        String jsonText = "{\"name\":\"Tom\",\"age\":20,\"active\":true,\"score\":95.5,"
-                + "\"tags\":[\"java\",\"json\"],\"address\":{\"city\":\"Bangkok\",\"zip\":\"10200\"},\"note\":null}";
-
-        Object parsed = json.parse(jsonText);
-        JsonObject obj = (JsonObject) parsed;
-
-        System.out.println("== อ่านค่าจาก JSON ที่ parse มา ==");
-        System.out.println("name = " + obj.getString("name"));
-        System.out.println("age = " + obj.getInt("age"));
-        System.out.println("active = " + obj.getBoolean("active"));
-        System.out.println("score = " + obj.getDouble("score"));
-        System.out.println("city = " + obj.getJsonObject("address").getString("city"));
-        System.out.println("tag[0] = " + obj.getJsonArray("tags").getString(0));
-        System.out.println("note (ไม่มีจริง) = " + obj.optString("missingKey", "ค่า default"));
-
-        System.out.println();
-        System.out.println("== พิมพ์กลับแบบบรรทัดเดียว ==");
-        System.out.println(json.stringify(obj));
-
-        System.out.println();
-        System.out.println("== พิมพ์กลับแบบ pretty print ==");
-        System.out.println(obj.toString(2));
-
-        // 2) สร้าง JSON เองตั้งแต่ต้น
-        System.out.println();
-        System.out.println("== สร้าง JSON เองด้วยโค้ด ==");
-        JsonObject user = new JsonObject();
-        user.put("id", 1001);
-        user.put("username", "somchai");
-        user.put("isAdmin", false);
-
-        JsonArray roles = new JsonArray();
-        roles.add("editor").add("viewer");
-        user.put("roles", roles);
-
-        System.out.println(user.toString(2));
-    }
 }

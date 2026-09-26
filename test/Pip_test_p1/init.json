@@ -1,0 +1,13 @@
+{
+    "name": "io",
+    "version": "1.0.0",
+    "buildMode": "source",
+    "build": {
+        "command": "g++ -fPIC -shared -o io.so src/main.cpp -lluajit-5.1",
+        "output": "io.so"
+    },
+    "artifact": "io.so",
+    "modules": [
+        { "name": "io", "path": "io.so", "mode": "sub" }
+    ]
+}

@@ -1,0 +1,10 @@
+{
+  "modules": [
+    {
+      "name": "io",
+      "mode": "sub",
+      "pathReal": "/mnt/d/Project/part3/lpp/test/Pip_test_p1/packages/io/io.so",
+      "sourcePackage": "io"
+    }
+  ]
+}

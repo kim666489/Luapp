@@ -1,0 +1,19 @@
+{
+  "packages": {
+    "io": {
+      "name": "io",
+      "version": "1.0.0",
+      "mode": "local",
+      "installedAt": "2026-09-26T14:30:08.571366839Z",
+      "installPath": "/mnt/d/Project/part3/lpp/test/Pip_test_p1/packages/io",
+      "modules": [
+        {
+          "name": "io",
+          "mode": "sub",
+          "pathReal": "/mnt/d/Project/part3/lpp/test/Pip_test_p1/packages/io/io.so",
+          "sourcePackage": "io"
+        }
+      ]
+    }
+  }
+}
